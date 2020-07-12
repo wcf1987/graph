@@ -37,4 +37,5 @@ public class UserBean {
     public void setRole(int Role) {
         this.Role = Role;
     }
+    
 }

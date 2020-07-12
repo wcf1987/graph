@@ -5,8 +5,5 @@
         SELECT * FROM User_Table WHERE Username = #{Username} AND Password = #{Password}
     </select>
 
-    <!--<insert id="insert" parameterType="com.pipenetwork.graph.bean.UserBean" useGeneratedKeys="true" keyProperty="Userid">
-        insert into userinfo(Userid,Username,Password,Role) values (#{Userid},#{Username},#{Password},#{Role})
-    </insert>-->
 
 </mapper>
