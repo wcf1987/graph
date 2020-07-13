@@ -228,7 +228,7 @@ function init()
         var node = enc.encode(graph.getModel());
         //xml = mxUtils.getXml(node);
         xml = node;
-        alert("xml文件存入全局变量，请按“导入xml”按钮导入！");
+        alert("xml文件存入全局变量，按“导入xml”按钮导入");
         console.log(xml);
     }));
     //导入xml
@@ -278,8 +278,8 @@ function getElements(graph) {
                     image.width = "100";
                     image.height = "50";
                     tbContainer.appendChild(image);
-                    //getAttributes(graph, curElement["id"]);
                     var type = createElement(curElement);
+                    getAttributes(graph, curElement["id"], type);
                     customFunct(graph, image, type);
                 }
             }
@@ -291,7 +291,7 @@ function getElements(graph) {
 }
 
 //根据elementID请求attr
-function getAttributes(graph, elementID) {
+function getAttributes(graph, elementID ,type) {
     $.ajax({
         url:"/graph/getAttributes",//url地址
         dataType:"json",         //返回的数据类型
@@ -301,7 +301,11 @@ function getAttributes(graph, elementID) {
         },
         success:function(data) {
             if(data.code == 0) {
-                //TODO:将这些attr添加到对应element中
+                var attributes = data.attributes;
+                for(var index in attributes) {
+                    var temp = attributes[index];
+                    type.setAttribute(temp["name"],temp["value"]);
+                }
             }
         },
         error:function(){
@@ -416,58 +420,57 @@ function addCell(graph, image, x, y, type)
 };
 
 //动态新增右侧文本框
+//TODO:修改值有BUG
 function createTextField(graph, form, cell, attribute)
 {
     var input = form.addText(attribute.nodeName + ':', attribute.nodeValue);
-
-    var applyHandler = function()
-    {
-        var newValue = input.value || '';
-        var oldValue = cell.getAttribute(attribute.nodeName, '');
-
-        if (newValue != oldValue)
-        {
-            graph.getModel().beginUpdate();
-
-            try
-            {
-                var edit = new mxCellAttributeChange(
-                    cell, attribute.nodeName,
-                    newValue);
-                graph.getModel().execute(edit);
-                graph.updateCellSize(cell);
-            }
-            finally
-            {
-                graph.getModel().endUpdate();
-            }
-        }
-    };
-
-    mxEvent.addListener(input, 'keypress', function (evt)
-    {
-        // Needs to take shift into account for textareas
-        if (evt.keyCode == /*enter*/13 &&
-            !mxEvent.isShiftDown(evt))
-        {
-            input.blur();
-        }
-    });
-
-    if (mxClient.IS_IE)
-    {
-        mxEvent.addListener(input, 'focusout', applyHandler);
-    }
-    else
-    {
-        // Note: Known problem is the blurring of fields in
-        // Firefox by changing the selection, in which case
-        // no event is fired in FF and the change is lost.
-        // As a workaround you should use a local variable
-        // that stores the focused field and invoke blur
-        // explicitely where we do the graph.focus above.
-        mxEvent.addListener(input, 'blur', applyHandler);
-    }
+    // var applyHandler = function()
+    // {
+    //     var newValue = input.value || '';
+    //     var oldValue = cell.getAttribute(attribute.nodeName, '');
+    //
+    //     if (newValue != oldValue)
+    //     {
+    //         graph.getModel().beginUpdate();
+    //
+    //         try
+    //         {
+    //             var edit = new mxCellAttributeChange(
+    //                 cell, attribute.nodeName,
+    //                 newValue);
+    //             graph.getModel().execute(edit);
+    //             graph.updateCellSize(cell);
+    //         }
+    //         finally
+    //         {
+    //             graph.getModel().endUpdate();
+    //         }
+    //     }
+    // };
+    // mxEvent.addListener(input, 'keypress', function (evt)
+    // {
+    //     // Needs to take shift into account for textareas
+    //     if (evt.keyCode == /*enter*/13 &&
+    //         !mxEvent.isShiftDown(evt))
+    //     {
+    //         input.blur();
+    //     }
+    // });
+    //
+    // if (mxClient.IS_IE)
+    // {
+    //     mxEvent.addListener(input, 'focusout', applyHandler);
+    // }
+    // else
+    // {
+    //     // Note: Known problem is the blurring of fields in
+    //     // Firefox by changing the selection, in which case
+    //     // no event is fired in FF and the change is lost.
+    //     // As a workaround you should use a local variable
+    //     // that stores the focused field and invoke blur
+    //     // explicitely where we do the graph.focus above.
+    //     mxEvent.addListener(input, 'blur', applyHandler);
+    // }
 }
 
 //更新rightbar内容
@@ -502,6 +505,12 @@ function selectionChanged(graph)
 //新增节点类型
 function createElement(element)
 {
+    for(var index in elementAttrList) {
+        var s = new XMLSerializer();
+        if(s.serializeToString(elementAttrList[index]).startsWith("<"+element["name"])) {
+            return elementAttrList[index];
+        }
+    }
     var eletype = doc.createElement(element["name"]);
     eletype.setAttribute('id',element["id"]);
     eletype.setAttribute('name',element["name"]);
