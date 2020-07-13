@@ -183,11 +183,19 @@ function init()
         bounds.height /= s;
         bounds.x = bounds.x / s - t.x;
         bounds.y = bounds.y / s - t.y;
-        
+
         var cw = graph.container.clientWidth - 10;
         var ch = graph.container.clientHeight - 10;
         var scale = Math.floor(20 * Math.min(cw / bounds.width, ch / bounds.height)) / 20;
         graph.zoomTo(scale);
+
+        if (mxUtils.hasScrollbars(graph.container))
+        {
+            graph.container.scrollTop = (bounds.y + t.y) * scale -
+                Math.max((ch - bounds.height * scale) / 2 + 5, 0);
+            graph.container.scrollLeft = (bounds.x + t.x) * scale -
+                Math.max((cw - bounds.width * scale) / 2 + 5, 0);
+        }
     }));
     //原始大小
     headContainer.appendChild(mxUtils.button('原始大小', function()
