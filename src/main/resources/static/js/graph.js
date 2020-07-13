@@ -1,6 +1,6 @@
 //存储工具栏信息
-var img = [];
-var imgitem = [];
+var elementInfo = [];
+var curElement = {};
 var imgsrc = ["单向阀.svg","阀室.svg","分输站.svg","管道（竖直）.svg",
 "管道（水平）.svg","截断阀.svg","空冷器.svg","离心压缩机.svg","理想调节阀.svg",
 "立管.svg","油库.svg","站场.svg","注入站.svg"];
@@ -8,13 +8,16 @@ var imgsrc = ["单向阀.svg","阀室.svg","分输站.svg","管道（竖直）.s
 var graph;
 var model;
 var tbContainer;
+var headContainer;
+var container;
+var rightContainer;
 var xml;
 
 //初始化
 function init()
 {
     //设置节点连接按钮的图标，点击图标拖动即可生成线
-    mxConnectionHandler.prototype.connectImage = new mxImage('../images/connector.gif', 16, 16);
+    mxConnectionHandler.prototype.connectImage = new mxImage('/images/connector.gif', 16, 16);
     //生成工具栏容器
     tbContainer = document.createElement('div');
     tbContainer.id = "tbContainer";
@@ -35,10 +38,10 @@ function init()
     container.style.top = '30px';
     container.style.right = '0px';
     container.style.bottom = '0px';
-    container.style.background = 'url("../images/grid.gif")';
+    container.style.background = 'url("/images/grid.gif")';
     document.body.appendChild(container);
     // headbar生成
-    var headContainer = document.createElement("div");
+    headContainer = document.createElement("div");
     headContainer.style.position = 'absolute';
     headContainer.style.overflow = 'hidden';
     headContainer.style.left = '0px';
@@ -47,6 +50,20 @@ function init()
     headContainer.style.buttom = '0px';
     headContainer.style.height = '30px';
     document.body.appendChild(headContainer);
+    //rightbar生成
+    rightContainer = document.createElement("div");
+    rightContainer.style.position = 'absolute';
+    rightContainer.style.overflow = 'scroll';
+    rightContainer.style.right = '0px';
+    rightContainer.style.top = '30px';
+    rightContainer.style.bottom = '0px';
+    rightContainer.style.width = '100px';
+    document.body.appendChild(rightContainer);
+    var cellInfo = document.createElement("div");
+    cellInfo.id = "cellInfo";
+    rightContainer.appendChild(cellInfo);
+
+
     
 
     model = new mxGraphModel();
@@ -115,16 +132,17 @@ function init()
     });
 
     //左侧工具栏放置已知模型
-    //根据文件名逐个生成
-    for(var i = 0; i < imgsrc.length; ++i)
-    {
-        img[i] = document.createElement("img");
-        img[i].src = "../elements/" + imgsrc[i];
-        img[i].width = "100";
-        img[i].height = "50";
-        tbContainer.appendChild(img[i]);
-        customFunct(graph, img[i]);
-    }
+    //根据POST逐个生成
+//    getElements(graph);
+    // for(var i = 0; i < imgsrc.length; ++i)
+    // {
+    //     img[i] = document.createElement("img");
+    //     img[i].src = "/elements/" + imgsrc[i];
+    //     img[i].width = "100";
+    //     img[i].height = "50";
+    //     tbContainer.appendChild(img[i]);
+    //     customFunct(graph, img[i]);
+    // }
 
     //headbar放置按钮
     //放大/缩小
@@ -198,7 +216,7 @@ function init()
 
         var xml = mxUtils.getXml(root);
         //POST到服务器url
-        new mxXmlRequest("/graph/uploadxml", 'format=png&w=' + w +'&h=' + h + '&bg=#F9F7ED&xml=' + encodeURIComponent(xml))
+        //new mxXmlRequest("/graph/uploadxml", 'format=png&w=' + w +'&h=' + h + '&bg=#F9F7ED&xml=' + encodeURIComponent(xml))
     }));
     //导出xml
     headContainer.appendChild(mxUtils.button('导出xml', function()
@@ -219,23 +237,57 @@ function init()
     }));
 
 
-    //rightbar显示详细信息(需要设计传输内容)
-
+    //rightbar显示详细信息
+    //添加监听函数
+    graph.getSelectionModel().addListener(mxEvent.CHANGE, function(sender, evt)
+    {
+        selectionChanged(graph);
+    });
 
 
     var parent = graph.getDefaultParent();
-    //生成初始节点，begin和end位置必须固定，用于撤销和重做
-    graph.getModel().beginUpdate();
-    try
-    {
-    }
-    finally
-    {
-        graph.getModel().endUpdate();
-    }
+    // //生成初始节点，begin和end位置必须固定，用于撤销和重做
+    // graph.getModel().beginUpdate();
+    // try
+    // {
+    // }
+    // finally
+    // {
+    //     graph.getModel().endUpdate();
+    // }
 
 };
 console.log("load ok");
+
+//请求所有elements
+function getElements(graph) {
+    $.ajax({
+        url:"/graph/getElements",//url地址
+        dataType:"json",         //返回的数据类型
+        type:"post",             //发起请求的方式
+        data:{
+        },
+        success:function(data) {
+            if(data.code == 0) {
+                elementInfo = data.elements;
+                for(var ele in elementInfo) {
+                    curElement = ele;
+                    var image = document.createElement("img");
+                    image.id = ele["id"];
+                    image.src = ele["path"];
+                    image.width = "100";
+                    image.height = "50";
+                    tbContainer.appendChild(image);
+                    customFunct(graph, image);
+                }
+            }
+
+        },
+        error:function(){
+            alert('获取管道元件信息错误，请重试！');
+        }
+    });
+}
 
 //创建自定义菜单（右键删除功能）
 function createPopupMenu(graph, menu, cell, evt)
@@ -320,16 +372,106 @@ function addedCustomFunct(graph, image)
 }
 
 //toolbar拖拽添加节点
-function addCell(graph, image, x, y) 
+function addCell(graph, image, x, y)
 {
     var width = image["naturalWidth"]/2;
     var height = image["naturalHeight"]/2;
     var style = 'shape=image;image=' + image["src"] + ';';
     var parent = graph.getDefaultParent();
+    var element;
+    for(var index in elementInfo) {
+        if(elementInfo[index]["id"] == image.id) {
+            element = elementInfo[index];
+            break;
+        }
+    }
     graph.getModel().beginUpdate();
     try {
-        var vertex = graph.insertVertex(parent, null, null, x, y, width, height, style);
+        var vertex = graph.insertVertex(parent, null, element["name"], x, y, width, height, style);
     } finally {
         graph.getModel().endUpdate();
     }
 };
+
+//动态新增右侧文本框
+function createTextField(graph, form, cell, attribute) {
+    var input = form.addText(attribute.nodeName + ':', attribute.nodeValue);
+
+    var applyHandler = function()
+    {
+        var newValue = input.value || '';
+        var oldValue = cell.getAttribute(attribute.nodeName, '');
+
+        if (newValue != oldValue)
+        {
+            graph.getModel().beginUpdate();
+
+            try
+            {
+                var edit = new mxCellAttributeChange(
+                    cell, attribute.nodeName,
+                    newValue);
+                graph.getModel().execute(edit);
+                graph.updateCellSize(cell);
+            }
+            finally
+            {
+                graph.getModel().endUpdate();
+            }
+        }
+    };
+
+    mxEvent.addListener(input, 'keypress', function (evt)
+    {
+        // Needs to take shift into account for textareas
+        if (evt.keyCode == /*enter*/13 &&
+            !mxEvent.isShiftDown(evt))
+        {
+            input.blur();
+        }
+    });
+
+    if (mxClient.IS_IE)
+    {
+        mxEvent.addListener(input, 'focusout', applyHandler);
+    }
+    else
+    {
+        // Note: Known problem is the blurring of fields in
+        // Firefox by changing the selection, in which case
+        // no event is fired in FF and the change is lost.
+        // As a workaround you should use a local variable
+        // that stores the focused field and invoke blur
+        // explicitely where we do the graph.focus above.
+        mxEvent.addListener(input, 'blur', applyHandler);
+    }
+}
+
+//更新rightbar内容
+function selectionChanged(graph)
+{
+    var div = document.getElementById('cellInfo');
+    graph.container.focus();
+    div.innerHTML = '';
+    var cell = graph.getSelectionCell();
+    if (cell == null)
+    {
+        mxUtils.writeln(div, '未选中元件！');
+    }
+    else
+    {
+        var center = document.createElement('center');
+        mxUtils.writeln(center, cell.value.nodeName);
+        div.appendChild(center);
+        mxUtils.br(div);
+        var form = new mxForm();
+        var attrs = cell.value.attributes;
+        for (var i = 0; i < attrs.length; i++)
+        {
+            createTextField(graph, form, cell, attrs[i]);
+        }
+
+        div.appendChild(form.getTable());
+        mxUtils.br(div);
+    }
+}
