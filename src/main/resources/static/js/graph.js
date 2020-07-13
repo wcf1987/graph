@@ -420,57 +420,55 @@ function addCell(graph, image, x, y, type)
 };
 
 //动态新增右侧文本框
-//TODO:修改值有BUG
 function createTextField(graph, form, cell, attribute)
 {
     var input = form.addText(attribute.nodeName + ':', attribute.nodeValue);
-    // var applyHandler = function()
-    // {
-    //     var newValue = input.value || '';
-    //     var oldValue = cell.getAttribute(attribute.nodeName, '');
-    //
-    //     if (newValue != oldValue)
-    //     {
-    //         graph.getModel().beginUpdate();
-    //
-    //         try
-    //         {
-    //             var edit = new mxCellAttributeChange(
-    //                 cell, attribute.nodeName,
-    //                 newValue);
-    //             graph.getModel().execute(edit);
-    //             graph.updateCellSize(cell);
-    //         }
-    //         finally
-    //         {
-    //             graph.getModel().endUpdate();
-    //         }
-    //     }
-    // };
-    // mxEvent.addListener(input, 'keypress', function (evt)
-    // {
-    //     // Needs to take shift into account for textareas
-    //     if (evt.keyCode == /*enter*/13 &&
-    //         !mxEvent.isShiftDown(evt))
-    //     {
-    //         input.blur();
-    //     }
-    // });
-    //
-    // if (mxClient.IS_IE)
-    // {
-    //     mxEvent.addListener(input, 'focusout', applyHandler);
-    // }
-    // else
-    // {
-    //     // Note: Known problem is the blurring of fields in
-    //     // Firefox by changing the selection, in which case
-    //     // no event is fired in FF and the change is lost.
-    //     // As a workaround you should use a local variable
-    //     // that stores the focused field and invoke blur
-    //     // explicitely where we do the graph.focus above.
-    //     mxEvent.addListener(input, 'blur', applyHandler);
-    // }
+    var applyHandler = function()
+    {
+        var newValue = input.value || '';
+        var oldValue = cell.getAttribute(attribute.nodeName, '');
+
+        if (newValue != oldValue)
+        {
+            graph.getModel().beginUpdate();
+
+            try
+            {
+                var edit = new mxCellAttributeChange(
+                    cell, attribute.nodeName,
+                    newValue);
+                graph.getModel().execute(edit);
+            }
+            finally
+            {
+                graph.getModel().endUpdate();
+            }
+        }
+    };
+    mxEvent.addListener(input, 'keypress', function (evt)
+    {
+        // Needs to take shift into account for textareas
+        if (evt.keyCode == /*enter*/13 &&
+            !mxEvent.isShiftDown(evt))
+        {
+            input.blur();
+        }
+    });
+
+    if (mxClient.IS_IE)
+    {
+        mxEvent.addListener(input, 'focusout', applyHandler);
+    }
+    else
+    {
+        // Note: Known problem is the blurring of fields in
+        // Firefox by changing the selection, in which case
+        // no event is fired in FF and the change is lost.
+        // As a workaround you should use a local variable
+        // that stores the focused field and invoke blur
+        // explicitely where we do the graph.focus above.
+        mxEvent.addListener(input, 'blur', applyHandler);
+    }
 }
 
 //更新rightbar内容
@@ -512,8 +510,6 @@ function createElement(element)
         }
     }
     var eletype = doc.createElement(element["name"]);
-    eletype.setAttribute('id',element["id"]);
-    eletype.setAttribute('name',element["name"]);
     elementAttrList.push(eletype);
     return eletype;
 }
