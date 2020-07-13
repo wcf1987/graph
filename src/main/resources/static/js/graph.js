@@ -1,7 +1,7 @@
 //存储工具栏信息
 var elementInfo = [];
 var curElement = {};
-var attrlist = [];
+var elementAttrList = [];
 var imgsrc = ["单向阀.svg","阀室.svg","分输站.svg","管道（竖直）.svg",
 "管道（水平）.svg","截断阀.svg","空冷器.svg","离心压缩机.svg","理想调节阀.svg",
 "立管.svg","油库.svg","站场.svg","注入站.svg"];
@@ -13,12 +13,14 @@ var headContainer;
 var container;
 var rightContainer;
 var xml;
+var doc;
 
 //初始化
 function init()
 {
     //设置节点连接按钮的图标，点击图标拖动即可生成线
     mxConnectionHandler.prototype.connectImage = new mxImage('/images/connector.gif', 16, 16);
+    doc = mxUtils.createXmlDocument();
     //生成工具栏容器
     tbContainer = document.createElement('div');
     tbContainer.id = "tbContainer";
@@ -242,7 +244,6 @@ function init()
     {
         selectionChanged(graph);
     });
-    selectionChanged(graph);
 
     var parent = graph.getDefaultParent();
     // //生成初始节点，begin和end位置必须固定，用于撤销和重做
@@ -269,15 +270,17 @@ function getElements(graph) {
         success:function(data) {
             if(data.code == 0) {
                 elementInfo = data.elements;
-                for(var ele in elementInfo) {
-                    curElement = ele;
+                for(var index in elementInfo) {
+                    curElement = elementInfo[index];
                     var image = document.createElement("img");
-                    image.id = ele["id"];
-                    image.src = ele["path"];
+                    image.id = curElement["id"];
+                    image.src = curElement["path"];
                     image.width = "100";
                     image.height = "50";
                     tbContainer.appendChild(image);
-                    customFunct(graph, image);
+                    //getAttributes(graph, curElement["id"]);
+                    var type = createElement(curElement);
+                    customFunct(graph, image, type);
                 }
             }
         },
@@ -288,7 +291,7 @@ function getElements(graph) {
 }
 
 //根据elementID请求attr
-function getAttributes(graph, elementID, vertex) {
+function getAttributes(graph, elementID) {
     $.ajax({
         url:"/graph/getAttributes",//url地址
         dataType:"json",         //返回的数据类型
@@ -298,8 +301,7 @@ function getAttributes(graph, elementID, vertex) {
         },
         success:function(data) {
             if(data.code == 0) {
-                //TODO:为vertex分配属性
-                vertex.setAttribute();
+                //TODO:将这些attr添加到对应element中
             }
         },
         error:function(){
@@ -356,11 +358,11 @@ function handleDrop(graph, file, x, y)
 };
 
 //自定义拖拽函数的动作
-function customFunct(graph, image)
+function customFunct(graph, image, type)
 {
     var funct = function(graph, evt, cell, x, y)
     {
-        addCell(graph, image, x, y);
+        addCell(graph, image, x, y, type);
     }
     mxUtils.makeDraggable(image, graph, funct, null);
 }
@@ -391,11 +393,11 @@ function addedCustomFunct(graph, image)
 }
 
 //toolbar拖拽添加节点
-function addCell(graph, image, x, y)
+function addCell(graph, image, x, y, type)
 {
     var width = image["naturalWidth"]/2;
     var height = image["naturalHeight"]/2;
-    var style = 'shape=image;image=' + image["src"] + ';';
+    var style = 'shape=image;image=' + image["src"] + ';verticalLabelPosition=bottom;verticalAlign=top';
     var parent = graph.getDefaultParent();
     var element;
     for(var index in elementInfo) {
@@ -406,17 +408,16 @@ function addCell(graph, image, x, y)
     }
     graph.getModel().beginUpdate();
     try {
-        var vertex = graph.insertVertex(parent, null, element["name"], x, y, width, height, style);
-        vertex.setAttribute("id",element["id"]);
-        vertex.setAttribute("name",element["name"]);
-        //getAttributes(graph, element["id"], vertex);
+        var vertex = graph.insertVertex(parent, null, type, x, y, width, height, style);
+        console.log(vertex);
     } finally {
         graph.getModel().endUpdate();
     }
 };
 
 //动态新增右侧文本框
-function createTextField(graph, form, cell, attribute) {
+function createTextField(graph, form, cell, attribute)
+{
     var input = form.addText(attribute.nodeName + ':', attribute.nodeValue);
 
     var applyHandler = function()
@@ -476,7 +477,7 @@ function selectionChanged(graph)
     graph.container.focus();
     div.innerHTML = '';
     var cell = graph.getSelectionCell();
-    if (cell == null)
+    if (cell == null || cell.vertex == false)
     {
         mxUtils.writeln(div, '未选中元件！');
     }
@@ -496,4 +497,14 @@ function selectionChanged(graph)
         div.appendChild(form.getTable());
         mxUtils.br(div);
     }
+}
+
+//新增节点类型
+function createElement(element)
+{
+    var eletype = doc.createElement(element["name"]);
+    eletype.setAttribute('id',element["id"]);
+    eletype.setAttribute('name',element["name"]);
+    elementAttrList.push(eletype);
+    return eletype;
 }
