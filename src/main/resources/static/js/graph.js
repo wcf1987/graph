@@ -1,6 +1,7 @@
 //存储工具栏信息
 var elementInfo = [];
 var curElement = {};
+var attrlist = [];
 var imgsrc = ["单向阀.svg","阀室.svg","分输站.svg","管道（竖直）.svg",
 "管道（水平）.svg","截断阀.svg","空冷器.svg","离心压缩机.svg","理想调节阀.svg",
 "立管.svg","油库.svg","站场.svg","注入站.svg"];
@@ -36,7 +37,7 @@ function init()
     container.style.overflow = 'auto';
     container.style.left = '100px';
     container.style.top = '30px';
-    container.style.right = '0px';
+    container.style.right = '300px';
     container.style.bottom = '0px';
     container.style.background = 'url("/images/grid.gif")';
     document.body.appendChild(container);
@@ -53,11 +54,11 @@ function init()
     //rightbar生成
     rightContainer = document.createElement("div");
     rightContainer.style.position = 'absolute';
-    rightContainer.style.overflow = 'scroll';
+    rightContainer.style.overflow = 'auto';
     rightContainer.style.right = '0px';
     rightContainer.style.top = '30px';
     rightContainer.style.bottom = '0px';
-    rightContainer.style.width = '100px';
+    rightContainer.style.width = '300px';
     document.body.appendChild(rightContainer);
     var cellInfo = document.createElement("div");
     cellInfo.id = "cellInfo";
@@ -133,7 +134,7 @@ function init()
 
     //左侧工具栏放置已知模型
     //根据POST逐个生成
-//    getElements(graph);
+    getElements(graph);
     // for(var i = 0; i < imgsrc.length; ++i)
     // {
     //     img[i] = document.createElement("img");
@@ -236,14 +237,12 @@ function init()
         dec.decode(node, graph.getModel());
     }));
 
-
-    //rightbar显示详细信息
     //添加监听函数
     graph.getSelectionModel().addListener(mxEvent.CHANGE, function(sender, evt)
     {
         selectionChanged(graph);
     });
-
+    selectionChanged(graph);
 
     var parent = graph.getDefaultParent();
     // //生成初始节点，begin和end位置必须固定，用于撤销和重做
@@ -281,10 +280,30 @@ function getElements(graph) {
                     customFunct(graph, image);
                 }
             }
-
         },
         error:function(){
             alert('获取管道元件信息错误，请重试！');
+        }
+    });
+}
+
+//根据elementID请求attr
+function getAttributes(graph, elementID, vertex) {
+    $.ajax({
+        url:"/graph/getAttributes",//url地址
+        dataType:"json",         //返回的数据类型
+        type:"post",             //发起请求的方式
+        data:{
+            "id":elementID
+        },
+        success:function(data) {
+            if(data.code == 0) {
+                //TODO:为vertex分配属性
+                vertex.setAttribute();
+            }
+        },
+        error:function(){
+            alert('获取元件属性错误，请重试！');
         }
     });
 }
@@ -388,6 +407,9 @@ function addCell(graph, image, x, y)
     graph.getModel().beginUpdate();
     try {
         var vertex = graph.insertVertex(parent, null, element["name"], x, y, width, height, style);
+        vertex.setAttribute("id",element["id"]);
+        vertex.setAttribute("name",element["name"]);
+        //getAttributes(graph, element["id"], vertex);
     } finally {
         graph.getModel().endUpdate();
     }
