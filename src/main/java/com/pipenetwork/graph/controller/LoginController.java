@@ -32,6 +32,11 @@ public class LoginController {
         }
     }
 
+    @RequestMapping("/graph")
+    public String showGraph (){
+        return "graph";
+    }
+
 
 
 }
