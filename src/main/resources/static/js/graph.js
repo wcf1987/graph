@@ -131,26 +131,23 @@ function init()
             var x = pt.x / scale - tr.x;
             var y = pt.y / scale - tr.y;
             
-            //若导入多个图片，分别处理
+            //因为弹框限制，一次只能处理一个元件
             var filesArray = event.dataTransfer.files;
-            for (var i = 0; i < filesArray.length; i++)
-            {
-                attrCount = 0;
-                curFile = filesArray[i];
-                curX = x + i * 10;
-                curY = y + i * 10;
-                //展开layer弹出层赋值，暂时保存本地
-                layer.open({
-                    type: 1,
-                    title: '新增元件赋值',
-                    content: $('#addModal'),
-                    area: '300px',
-                    offset: '150px',
-                    id: 'paramContent',
-                    success: function(layero, index){
-                    }
-                });
-            }
+            attrCount = 0;
+            curFile = filesArray[0];
+            curX = x;
+            curY = y;
+            //展开layer弹出层赋值，暂时保存本地
+            layer.open({
+                type: 1,
+                title: '新增元件赋值',
+                content: $('#addModal'),
+                area: '300px',
+                offset: '150px',
+                id: 'paramContent',
+                success: function(layero, index){
+                }
+            });
         }
     });
 
@@ -563,6 +560,7 @@ function addNewElement(graph)
     attrCount = 0;
     handleDrop(graph, curFile, curX, curY, type);
     layer.closeAll();
+    return;
 }
 
 //动态新增属性input
@@ -579,8 +577,19 @@ function addNewAttr()
     input_value.placeholder = "请输入属性值...";
     name.appendChild(input_name);
     name.appendChild(input_value);
-    var br = document.createElement("br");
-    name.appendChild(br);
     attrCount++;
+    return;
+}
+
+//删除最下方的imput
+function delNewAttr()
+{
+    var name = document.getElementById("param_form");
+    var count = attrCount - 1;
+    var input_name = document.getElementById("name"+ count);
+    var input_value = document.getElementById("value"+ count);
+    input_value.remove();
+    input_name.remove();
+    attrCount--;
     return;
 }

@@ -71,7 +71,6 @@ public class LoginController {
     @RequestMapping(value = "/graph/getAttributes",method = RequestMethod.POST)
     @ResponseBody
     public String getAttributes(String id){
-        System.out.println(id);
         List<AttributeBean> attributeBean = attributeMapper.getAttribute(id);
         String s = "{\"code\":\"0\",\"attributes\":[";
         int i = 0;
