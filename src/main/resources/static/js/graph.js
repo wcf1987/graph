@@ -129,7 +129,14 @@ function init()
             var filesArray = event.dataTransfer.files;
             for (var i = 0; i < filesArray.length; i++)
             {
-                handleDrop(graph, filesArray[i], x + i * 10, y + i * 10);
+                //TODO:先不上传，暂时存在本地，弹框输入参数后建立对应element与attribute
+                layer.open({
+                    type: 1,
+                    area: ['600px', '360px'],
+                    shadeClose: false,
+                    content: '\<\div style="padding:20px;">自定义内容\<\/div>'
+                });
+                //handleDrop(graph, filesArray[i], x + i * 10, y + i * 10);
             }
         }
     });
