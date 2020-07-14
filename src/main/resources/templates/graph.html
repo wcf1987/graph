@@ -11,6 +11,16 @@
 	<script type="text/javascript" src="/js/graph.js"></script>
 </head>
 <body onload="init();">
+<!-- 元件赋值模态框 -->
+	<div id="addModal" style="display: none;">
+		<form role="form" id="param_form"  action="/loginIn" method="post">
+<!--			id：<input type="text" id="new_id" name="id"> <br>-->
+			名称：<input type="text" id="new_name" name="name"> <br>
+<!--			<input type="submit" id="submit" value="submit">-->
+		</form>
+		<button type="button" id="addNewAttr" onclick="addNewAttr()">新增属性</button>
+		<button type="button" id="confirm" onclick="addNewElement(graph)">提交</button>
+	</div>
 </body>
 
 </html>

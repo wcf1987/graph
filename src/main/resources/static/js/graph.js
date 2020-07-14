@@ -2,6 +2,11 @@
 var elementInfo = [];
 var curElement = {};
 var elementAttrList = [];
+//新增元件相关全局变量
+var attrCount = 0;
+var curX;
+var curY;
+var curFile;
 var imgsrc = ["单向阀.svg","阀室.svg","分输站.svg","管道（竖直）.svg",
 "管道（水平）.svg","截断阀.svg","空冷器.svg","离心压缩机.svg","理想调节阀.svg",
 "立管.svg","油库.svg","站场.svg","注入站.svg"];
@@ -14,6 +19,7 @@ var container;
 var rightContainer;
 var xml;
 var doc;
+
 
 //初始化
 function init()
@@ -129,14 +135,21 @@ function init()
             var filesArray = event.dataTransfer.files;
             for (var i = 0; i < filesArray.length; i++)
             {
-                //TODO:先不上传，暂时存在本地，弹框输入参数后建立对应element与attribute
+                attrCount = 0;
+                curFile = filesArray[i];
+                curX = x + i * 10;
+                curY = y + i * 10;
+                //展开layer弹出层赋值，暂时保存本地
                 layer.open({
                     type: 1,
-                    area: ['600px', '360px'],
-                    shadeClose: false,
-                    content: '\<\div style="padding:20px;">自定义内容\<\/div>'
+                    title: '新增元件赋值',
+                    content: $('#addModal'),
+                    area: '300px',
+                    offset: '150px',
+                    id: 'paramContent',
+                    success: function(layero, index){
+                    }
                 });
-                //handleDrop(graph, filesArray[i], x + i * 10, y + i * 10);
             }
         }
     });
@@ -293,7 +306,7 @@ function getElements(graph) {
                     image.width = "100";
                     image.height = "50";
                     tbContainer.appendChild(image);
-                    var type = createElement(curElement);
+                    var type = createElement(curElement["name"]);
                     getAttributes(graph, curElement["id"], type);
                     customFunct(graph, image, type);
                 }
@@ -342,7 +355,7 @@ function createPopupMenu(graph, menu, cell, evt)
 };
 
 //拖拽生成节点，将该图片加入侧边工具栏
-function handleDrop(graph, file, x, y)
+function handleDrop(graph, file, x, y, type)
 {
     if (file.type.substring(0, 5) == 'image')
     {
@@ -362,7 +375,8 @@ function handleDrop(graph, file, x, y)
                     data = data.substring(0, semi) + data.substring(data.indexOf(',', semi + 1));
                 }
                 var parent = graph.getDefaultParent();
-                var vertex = graph.insertVertex(parent, null, '', x, y, w, h, 'shape=image;image=' + data + ';');
+                var vertex = graph.insertVertex(parent, null, type, x, y, w, h, 'shape=image;image='
+                    + data + ';verticalLabelPosition=bottom;verticalAlign=top');
             };
             img.src = data;
             item = document.createElement("img");
@@ -370,7 +384,7 @@ function handleDrop(graph, file, x, y)
             item.width = "100";
             item.height = "50";
             tbContainer.appendChild(item);
-            addedCustomFunct(graph, item);
+            addedCustomFunct(graph, item, type);
         };
         reader.readAsDataURL(file);
     }
@@ -387,28 +401,34 @@ function customFunct(graph, image, type)
 }
 
 //新添加图片（data格式）拖拽函数的动作
-function addedCustomFunct(graph, image)
+function addedCustomFunct(graph, image, type)
 {
     var funct = function(graph, evt, cell, x, y)
     {
-        var data = image["src"];
-        var img = new Image();
-        img.onload = function()
-        {
-            var w = Math.max(1, img.width/2);
-            var h = Math.max(1, img.height/2);
-            var semi = data.indexOf(';');
-            if (semi > 0)
-            {
-                data = data.substring(0, semi) + data.substring(data.indexOf(',', semi + 1));
-            }
-            var parent = graph.getDefaultParent();
-            var vertex = graph.insertVertex(parent, null, null, x, y, w, h, 'shape=image;image=' + data + ';');
-        };
-        img.src = data;
-        console.log(img);
+        addDataCell(graph, image, x, y, type);
     }
     mxUtils.makeDraggable(image, graph, funct, null);
+}
+
+//toolbar拖拽添加data格式节点
+function addDataCell(graph, image, x, y, type)
+{
+    var data = image["src"];
+    var img = new Image();
+    img.onload = function()
+    {
+        var w = Math.max(1, img.width/2);
+        var h = Math.max(1, img.height/2);
+        var semi = data.indexOf(';');
+        if (semi > 0)
+        {
+            data = data.substring(0, semi) + data.substring(data.indexOf(',', semi + 1));
+        }
+        var parent = graph.getDefaultParent();
+        var vertex = graph.insertVertex(parent, null, type, x, y, w, h, 'shape=image;image='
+            + data + ';verticalLabelPosition=bottom;verticalAlign=top');
+    };
+    img.src = data;
 }
 
 //toolbar拖拽添加节点
@@ -418,17 +438,17 @@ function addCell(graph, image, x, y, type)
     var height = image["naturalHeight"]/2;
     var style = 'shape=image;image=' + image["src"] + ';verticalLabelPosition=bottom;verticalAlign=top';
     var parent = graph.getDefaultParent();
-    var element;
-    for(var index in elementInfo) {
-        if(elementInfo[index]["id"] == image.id) {
-            element = elementInfo[index];
-            break;
-        }
-    }
+    // var element;
+    // for(var index in elementInfo) {
+    //     if(elementInfo[index]["id"] == image.id) {
+    //         element = elementInfo[index];
+    //         break;
+    //     }
+    // }
     graph.getModel().beginUpdate();
     try {
         var vertex = graph.insertVertex(parent, null, type, x, y, width, height, style);
-        console.log(vertex);
+        //console.log(vertex);
     } finally {
         graph.getModel().endUpdate();
     }
@@ -515,16 +535,52 @@ function selectionChanged(graph)
     }
 }
 
-//新增节点类型
-function createElement(element)
+//创建节点类型
+function createElement(name)
 {
     for(var index in elementAttrList) {
         var s = new XMLSerializer();
-        if(s.serializeToString(elementAttrList[index]).startsWith("<"+element["name"])) {
+        if(s.serializeToString(elementAttrList[index]).startsWith("<"+name)) {
             return elementAttrList[index];
         }
     }
-    var eletype = doc.createElement(element["name"]);
+    var eletype = doc.createElement(name);
     elementAttrList.push(eletype);
     return eletype;
+}
+
+//拖拽新增节点类型
+function addNewElement(graph)
+{
+    //var id = document.getElementById("new_id").value;
+    var name = document.getElementById("new_name").value;
+    var type = createElement(name);
+    for(var i = 0; i < attrCount; ++i) {
+        var input_name = document.getElementById("name" + i).value;
+        var input_value = document.getElementById("value" + i).value;
+        type.setAttribute(input_name, input_value);
+    }
+    attrCount = 0;
+    handleDrop(graph, curFile, curX, curY, type);
+    layer.closeAll();
+}
+
+//动态新增属性input
+function addNewAttr()
+{
+    var name = document.getElementById("param_form");
+    var input_name = document.createElement("input");
+    input_name.id = "name" + attrCount;
+    input_name.name = "name" + attrCount;
+    input_name.placeholder = "请输入属性名...";
+    var input_value = document.createElement("input");
+    input_value.id = "value" + attrCount;
+    input_value.name = "value" + attrCount;
+    input_value.placeholder = "请输入属性值...";
+    name.appendChild(input_name);
+    name.appendChild(input_value);
+    var br = document.createElement("br");
+    name.appendChild(br);
+    attrCount++;
+    return;
 }
