@@ -1,6 +1,8 @@
 package com.pipenetwork.graph.controller;
+import com.pipenetwork.graph.bean.AttributeBean;
 import com.pipenetwork.graph.bean.ElementBean;
 import com.pipenetwork.graph.bean.UserBean;
+import com.pipenetwork.graph.mapper.AttributeMapper;
 import com.pipenetwork.graph.mapper.ElementMapper;
 import com.pipenetwork.graph.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +21,8 @@ public class LoginController {
     UserService userService;
     @Autowired
     ElementMapper elementMapper;
+    @Autowired
+    AttributeMapper attributeMapper;
 
 
     @RequestMapping("/login")
@@ -64,11 +68,21 @@ public class LoginController {
         return s;
     }
 
-    @RequestMapping("/graph/getAttributes")
+    @RequestMapping(value = "/graph/getAttributes",method = RequestMethod.POST)
     @ResponseBody
     public String getAttributes(String id){
-        String test = "{\"code\":\"0\",\"elements\":[{\"id\":\"1\",\"name\":\"分输站\",\"path\":\"/elements/分输站.svg\"},{\"id\":\"2\",\"name\":\"单向阀\",\"path\":\"/elements/单向阀.svg\"},{\"id\":\"3\",\"name\":\"截断阀\",\"path\":\"/elements/截断阀.svg\"},{\"id\":\"13\",\"name\":\"阀室\",\"path\":\"/elements/阀室.svg\"}]}";
-        return test;
+        System.out.println(id);
+        List<AttributeBean> attributeBean = attributeMapper.getAttribute(id);
+        String s = "{\"code\":\"0\",\"attributes\":[";
+        int i = 0;
+        for(AttributeBean e : attributeBean){
+            if(i!=0)s += ",";
+            i++;
+            s += "{\"name\":\"";s += e.getAttributeName();s += "\",";
+            s += "\"value\":\"";s += e.getAttributeDefaultValue();s += "\"}";
+        }
+        s += "]}";
+        return s;
     }
 
 
