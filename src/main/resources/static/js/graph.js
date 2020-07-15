@@ -220,31 +220,94 @@ function init()
         var scale = 1;
         graph.zoomTo(scale);
     }));
-    //导出图片(网络部分未编写)
-    headContainer.appendChild(mxUtils.button('导出图片', function()
+    //导出pdf（图片渲染难点多,且需要后台处理）
+    headContainer.appendChild(mxUtils.button('导出pdf', function()
     {
-        var bounds = graph.getGraphBounds();
-        var scale = graph.view.scale;			
-        var name = new Date().toLocaleString();
-        console.log(name)
-        var format = "png";
-        var s = 1;
-        var b = 0;
-        var bg = null;
-        var dpi = 300;
-        var xmlDoc = mxUtils.createXmlDocument();
-        var root = xmlDoc.createElement('output');
-        xmlDoc.appendChild(root);
+        // var bounds = graph.getGraphBounds();
+        // var scale = graph.view.scale;
+        // var format = "png";
+        // var s = 1;
+        // var b = 0;
+        // var bg = null;
+        // var dpi = 300;
+        // var xmlDoc = mxUtils.createXmlDocument();
+        // var root = xmlDoc.createElement('output');
+        // xmlDoc.appendChild(root);
+        //
+        // var xmlCanvas = new mxXmlCanvas2D(root);
+        // var imgExport = new mxImageExport();
+        // imgExport.drawState(graph.getView().getState(graph.model.root), xmlCanvas);
+        // var w = Math.ceil(bounds.x + bounds.width);
+        // var h = Math.ceil(bounds.y + bounds.height);
+        // var xml = mxUtils.getXml(root);
+        // $.ajax({
+        //     url:"/graph/uploadPng",//url地址
+        //     dataType:"json",         //返回的数据类型
+        //     type:"post",             //发起请求的方式
+        //     data:{
+        //         "file":xml
+        //     },
+        //     success:function(data) {
+        //         if(data.code == 0) {
+        //
+        //         }
+        //     },
+        //     error:function(){
+        //         alert('图片生成失败，请重试！');
+        //     }
+        // });
+        var autoOrigin = true;
+        var printScale = 1;
 
-        var xmlCanvas = new mxXmlCanvas2D(root);
-        var imgExport = new mxImageExport();
-        imgExport.drawState(graph.getView().getState(graph.model.root), xmlCanvas);
-        var w = Math.ceil(bounds.x + bounds.width);
-        var h = Math.ceil(bounds.y + bounds.height);
+        // Workaround to match available paper size in actual print output
+        printScale *= 0.75;
 
-        var xml = mxUtils.getXml(root);
-        //POST到服务器url
-        //new mxXmlRequest("/graph/uploadxml", 'format=png&w=' + w +'&h=' + h + '&bg=#F9F7ED&xml=' + encodeURIComponent(xml))
+        var pf = graph.pageFormat;
+        console.log(pf);
+        var scale = 1 / graph.pageScale;
+
+        if (autoOrigin)
+        {
+            var pageCount = 1;
+
+            if (!isNaN(pageCount))
+            {
+                scale = mxUtils.getScaleForPageCount(pageCount, graph, pf);
+                console.log(scale);
+            }
+        }
+
+        // Negative coordinates are cropped or shifted if page visible
+        var gb = graph.getGraphBounds();
+        var border = 0;
+        var x0 = 0;
+        var y0 = 0;
+
+        // Applies print scale
+        pf = mxRectangle.fromRectangle(pf);
+        pf.width = Math.ceil(pf.width * printScale);
+        pf.height = Math.ceil(pf.height * printScale);
+        scale *= printScale;
+
+        // Starts at first visible page
+        if (!autoOrigin && graph.pageVisible)
+        {
+            var layout = graph.getPageLayout();
+            x0 -= layout.x * pf.width;
+            y0 -= layout.y * pf.height;
+        }
+        else
+        {
+            autoOrigin = true;
+        }
+
+        var preview = createPrintPreview(graph, scale, pf, border, x0, y0, autoOrigin);
+        preview.open();
+
+        if (print)
+        {
+            printPreview(preview);
+        }
     }));
     //导出xml
     headContainer.appendChild(mxUtils.button('导出xml', function()
@@ -581,7 +644,7 @@ function addNewAttr()
     return;
 }
 
-//删除最下方的imput
+//删除最下方的input
 function delNewAttr()
 {
     var name = document.getElementById("param_form");
@@ -592,4 +655,53 @@ function delNewAttr()
     input_name.remove();
     attrCount--;
     return;
+}
+
+//生成预览
+function createPrintPreview(graph, scale, pf, border, x0, y0, autoOrigin)
+{
+    var preview = new mxPrintPreview(graph, scale, pf, border, x0, y0);
+//    preview.title = mxResources.get('preview');
+    preview.printBackgroundImage = true;
+    preview.autoOrigin = autoOrigin;
+    var bg = '#ffffff';
+    preview.backgroundColor = bg;
+
+    var writeHead = preview.writeHead;
+
+    // Adds a border in the preview
+    preview.writeHead = function(doc)
+    {
+        writeHead.apply(this, arguments);
+
+        doc.writeln('<style type="text/css">');
+        doc.writeln('@media screen {');
+        doc.writeln('  body > div { padding:30px;box-sizing:content-box; }');
+        doc.writeln('}');
+        doc.writeln('</style>');
+    };
+    return preview;
+}
+
+//打印预览
+function printPreview(preview)
+{
+    try
+    {
+        if (preview.wnd != null)
+        {
+            var printFn = function()
+            {
+                preview.wnd.focus();
+                preview.wnd.print();
+                preview.wnd.close();
+            };
+            //needs a bit of delay in order to render the SVG contents
+            window.setTimeout(printFn, 500);
+            printFn();
+        }
+    }
+    catch (e)
+    {
+    }
 }
