@@ -73,8 +73,6 @@ function init()
     rightContainer.appendChild(cellInfo);
 
 
-    
-
     model = new mxGraphModel();
     graph = new mxGraph(container, model);
     //在container中禁用浏览器右键菜单，用于编写自定义菜单
@@ -309,22 +307,41 @@ function init()
             printPreview(preview);
         }
     }));
-    //导出xml
+    //导出xml(未写上传方法）
     headContainer.appendChild(mxUtils.button('导出xml', function()
     {
         var enc = new mxCodec(mxUtils.createXmlDocument());
         var node = enc.encode(graph.getModel());
-        //xml = mxUtils.getXml(node);
+        var file = mxUtils.getXml(node);
+        //同时存入全局变量
         xml = node;
-        alert("xml文件存入全局变量，按“导入xml”按钮导入");
+        //下载文件方法
+        var funDownload = function (content, filename)
+        {
+            var eleLink = document.createElement('a');
+            eleLink.download = filename;
+            eleLink.style.display = 'none';
+            // 字符内容转变成blob地址
+            var blob = new Blob([content]);
+            eleLink.href = URL.createObjectURL(blob);
+            // 触发点击
+            document.body.appendChild(eleLink);
+            eleLink.click();
+            // 然后移除
+            document.body.removeChild(eleLink);
+        }
+        //从浏览器保存文件
+        if ('download' in document.createElement('a')) {
+                funDownload(file, 'model.xml');
+        } else {
+                alert('浏览器不支持导出文件!');
+        }
         console.log(xml);
     }));
     //导入xml
     headContainer.appendChild(mxUtils.button('导入xml', function()
     {
-        var node = xml;
-        var dec = new mxCodec(node);
-        dec.decode(node, graph.getModel());
+        document.getElementById("importXML").click();
     }));
 
     //添加监听函数
@@ -344,7 +361,7 @@ function init()
     //     graph.getModel().endUpdate();
     // }
 
-};
+}
 console.log("load ok");
 
 //请求所有elements
@@ -412,7 +429,7 @@ function createPopupMenu(graph, menu, cell, evt)
             graph.removeCells();
         });
     }
-};
+}
 
 //拖拽生成节点，将该图片加入侧边工具栏
 function handleDrop(graph, file, x, y, type)
@@ -448,7 +465,7 @@ function handleDrop(graph, file, x, y, type)
         };
         reader.readAsDataURL(file);
     }
-};
+}
 
 //自定义拖拽函数的动作
 function customFunct(graph, image, type)
@@ -512,7 +529,7 @@ function addCell(graph, image, x, y, type)
     } finally {
         graph.getModel().endUpdate();
     }
-};
+}
 
 //动态新增右侧文本框
 function createTextField(graph, form, cell, attribute)
@@ -705,3 +722,22 @@ function printPreview(preview)
     {
     }
 }
+
+//处理上传的xml文件
+function handle_file(graph, files)
+{
+    if (files != null) {
+        var file = files[0];
+        var reader = new FileReader();
+        //判断是否为文本文件
+        reader.onload = function(e) {
+            var data = e.target.result;
+            var model = mxUtils.parseXml(data);
+            console.log(model);
+            var dec = new mxCodec(model);
+            dec.decode(model.documentElement, graph.getModel());
+        }
+        reader.readAsText(file);
+    }
+}
+
