@@ -31,19 +31,19 @@ function init()
     tbContainer = document.createElement('div');
     tbContainer.id = "tbContainer";
     tbContainer.style.position = 'absolute';
-    tbContainer.style.overflow = 'hidden';
+    tbContainer.style.overflow = 'auto';
     tbContainer.style.padding = '2px';
     tbContainer.style.left = '0px';
     tbContainer.style.top = '30px';
     tbContainer.style.bottom = '0px';
-    tbContainer.style.width = '100px';
+    tbContainer.style.width = '110px';
     document.body.appendChild(tbContainer);
     // graph所在容器生成
     container = document.createElement('div');
     container.style.position = 'absolute';
     //设为scroll/auto时右键平移就会失效，原因未知，需要使用平移时请改为hidden
     container.style.overflow = 'auto';
-    container.style.left = '100px';
+    container.style.left = '110px';
     container.style.top = '30px';
     container.style.right = '300px';
     container.style.bottom = '0px';
