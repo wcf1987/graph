@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.pipenetwork.graph.mapper.ElementMapper">
     <select id="getElement" parameterType="String" resultType="com.pipenetwork.graph.bean.ElementBean">
-        SELECT * FROM element_Table
+        SELECT * FROM element_Table ORDER BY ElementID+0
     </select>
 
 

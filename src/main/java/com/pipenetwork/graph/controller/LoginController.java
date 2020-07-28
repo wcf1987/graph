@@ -10,7 +10,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
+import sun.misc.BASE64Encoder;
 
+import java.io.*;
 import java.util.List;
 
 @Controller
@@ -53,7 +55,6 @@ public class LoginController {
     @RequestMapping(value = "/graph/getElements")
     @ResponseBody
     public String getElements(){
-        //ElementBean elementBean = elementService.loginIn();
         List<ElementBean> elementBean = elementMapper.getElement();
         String s = "{\"code\":\"0\",\"elements\":[";
         int i = 0;
@@ -81,6 +82,46 @@ public class LoginController {
             s += "\"value\":\"";s += e.getAttributeDefaultValue();s += "\"}";
         }
         s += "]}";
+        return s;
+    }
+
+
+    //模型保存读取test
+    @RequestMapping(value = "/graph/getTestModel")
+    @ResponseBody
+    public String getModel()  {
+        StringBuilder s = new StringBuilder();
+        try{
+            File file = new File("src/main/resources/models/1.xml");
+            InputStreamReader in = new InputStreamReader(new FileInputStream(file),"UTF-8");
+            BufferedReader br = new BufferedReader(in);
+            String line = "";
+            while ((line=br.readLine())!=null){
+                s = s.append(line);
+            }
+        }catch (Exception e) {
+            System.out.println(e);
+            return "";
+        }
+        return s.toString();
+    }
+
+    @RequestMapping(value = "/graph/saveTestModel")
+    @ResponseBody
+    public String setModel(String file)  {
+        String s = "{\"code\":\"0\"}";
+        String f = "{\"code\":\"1\"}";
+        try{
+            File filepath = new File("src/main/resources/models/1.xml");
+            OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream(filepath,false),"UTF-8");
+            BufferedWriter br = new BufferedWriter(out);
+            br.write(file);
+            br.flush();
+            br.close();
+        }catch (Exception e) {
+            System.out.println(e);
+            return f;
+        }
         return s;
     }
 
